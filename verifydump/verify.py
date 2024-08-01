@@ -110,8 +110,8 @@ def verify_redump_dump_folder(dump_folder: pathlib.Path, dat: Dat, extra_cue_sou
         rom_with_matching_sha1_and_name = next((rom for rom in roms_with_matching_sha1 if rom.name == dump_file_path.name), None)
 
         if not rom_with_matching_sha1_and_name:
-            list_of_rom_names_that_match_sha1 = " or ".join([f'"{rom.name}"' for rom in roms_with_matching_sha1])
-            raise VerificationException(f'Dump file "{dump_file_path.name}" found in Dat, but it should be named {list_of_rom_names_that_match_sha1}')
+            list_of_rom_names_that_match_sha1 = "\n\t".join(sorted([f'"{rom.name}"' for rom in roms_with_matching_sha1]))
+            raise VerificationException(f'Dump file "{dump_file_path.name}" found in Dat, but it should be named one of the following:\n\t{list_of_rom_names_that_match_sha1}')
 
         if rom_with_matching_sha1_and_name.size != dump_file_path.stat().st_size:
             print(f"{rom_with_matching_sha1_and_name.size} {dump_file_path.stat().st_size}")
@@ -243,8 +243,10 @@ def verify_dumps(dat: Dat, dump_file_or_folder_paths: typing.List[pathlib.Path],
             elif error_if_unsupported:
                 raise VerificationException(f'{pathlib.Path(sys.argv[0]).stem} doesn\'t know how to handle "{suffix_lower}" dumps')
         except VerificationException as e:
+            logging.error(str(e))
             errors.append(e)
         except ConversionException as e:
+            logging.error(str(e))
             errors.append(e)
 
     for dump_file_or_folder_path in dump_file_or_folder_paths:
