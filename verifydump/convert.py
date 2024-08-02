@@ -54,22 +54,23 @@ def normalize_redump_bincue_dump(cue_file_path: pathlib.Path):
     dump_path = cue_file_path.parent
     dump_name = cue_file_path.stem
 
-    tracks = list(dump_path.glob(glob.escape(dump_name) + " (Track *).bin"))
-    has_multiple_tracks = len(tracks) > 1
-    if not has_multiple_tracks:
+    tracks = list(dump_path.glob(glob.escape(dump_name) + "*.bin"))
+    has_single_track = len(tracks) == 1
+    if has_single_track:
         original_bin_name = pathlib.Path(tracks[0]).name
         single_track_bin_name = f"{dump_name}.bin"
 
-        logging.debug(f'Renaming "{original_bin_name}" to "{single_track_bin_name}" because there is only one .bin file in the dump')
+        if original_bin_name != single_track_bin_name:
+            logging.debug(f'Renaming "{original_bin_name}" to "{single_track_bin_name}" because there is only one .bin file in the dump')
 
-        os.rename(
-            pathlib.Path(dump_path, original_bin_name),
-            pathlib.Path(dump_path, single_track_bin_name),
-        )
+            os.rename(
+                pathlib.Path(dump_path, original_bin_name),
+                pathlib.Path(dump_path, single_track_bin_name),
+            )
 
-        cue_file_path.write_text(cue_file_path.read_text().replace(f'FILE "{original_bin_name}"', f'FILE "{single_track_bin_name}"'), newline="\r\n")
+            cue_file_path.write_text(cue_file_path.read_text().replace(f'FILE "{original_bin_name}"', f'FILE "{single_track_bin_name}"'), newline="\r\n")
 
-    is_cue_iso_compatible = not has_multiple_tracks and re.match(r'^\s*FILE\s+"' + re.escape(f"{dump_name}.bin") + r'"\s*BINARY\s+TRACK 01 MODE1/2048\s+INDEX 01 00:00:00\s*$', cue_file_path.read_text())
+    is_cue_iso_compatible = has_single_track and re.match(r'^\s*FILE\s+"' + re.escape(f"{dump_name}.bin") + r'"\s*BINARY\s+TRACK 01 MODE1/2048\s+INDEX 01 00:00:00\s*$', cue_file_path.read_text())
     if is_cue_iso_compatible:
         logging.debug(f'"{cue_file_path.name}" is .iso compatible so converting dump to .iso and discarding .cue')
 
